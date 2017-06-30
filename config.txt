@@ -1,0 +1,6 @@
+Twilio_Account_Sid
+Twilio_Account_Auth_Token
+To_Number
+From_Number
+Message
+Seconds_Between_Repeats
