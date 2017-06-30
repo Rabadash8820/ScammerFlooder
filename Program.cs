@@ -14,8 +14,8 @@ namespace ScammerFlooder {
             string accountSid = null;
             string authToken = null;
             string toNum = null;
-            string fromNums = null;
-            string message = null;
+            string fromNumsStr = null;
+            string twimlUriStr = null;
             string intervalStr = null;
 
             // Get Twilio credentials and the number to call from the config file, if one was provided
@@ -36,13 +36,13 @@ namespace ScammerFlooder {
                         if (string.IsNullOrWhiteSpace(toNum))
                             Console.WriteLine($"No phone number to flood provided in config file {path}");
 
-                        fromNums = reader.ReadLine();
-                        if (string.IsNullOrWhiteSpace(fromNums))
+                        fromNumsStr = reader.ReadLine();
+                        if (string.IsNullOrWhiteSpace(fromNumsStr))
                             Console.WriteLine($"No phone numbers to call from provided in config file {path}");
 
-                        message = reader.ReadLine();
-                        if (string.IsNullOrWhiteSpace(message))
-                            Console.WriteLine($"No message was provided in config file {path}");
+                        twimlUriStr = reader.ReadLine();
+                        if (string.IsNullOrWhiteSpace(twimlUriStr))
+                            Console.WriteLine($"No TwiML URL provided in config file {path}");
 
                         intervalStr = reader.ReadLine();
                         if (string.IsNullOrWhiteSpace(intervalStr))
@@ -68,11 +68,11 @@ namespace ScammerFlooder {
             if (string.IsNullOrWhiteSpace(toNum))
                 if (!continueWithInput("Enter the number to flood (do not include '+1'), or 'q' to exit: ", false, out toNum))
                     return 1;
-            if (string.IsNullOrWhiteSpace(fromNums))
-                if (!continueWithInput("Enter the numbers to call from (separated by spaces, do not include '+1'), or 'q' to exit: ", false, out fromNums))
+            if (string.IsNullOrWhiteSpace(fromNumsStr))
+                if (!continueWithInput("Enter the numbers to call from (separated by spaces, do not include '+1'), or 'q' to exit: ", false, out fromNumsStr))
                     return 1;
-            if (string.IsNullOrWhiteSpace(message))
-                if (!continueWithInput("Enter the flood message, or 'q' to exit: ", false, out message))
+            if (string.IsNullOrWhiteSpace(twimlUriStr))
+                if (!continueWithInput("Enter the TwiML URL to flood with, or 'q' to exit: ", false, out twimlUriStr))
                     return 1;
             if (string.IsNullOrWhiteSpace(intervalStr))
                 if (!continueWithInput("Enter the interval (in seconds) at which to flood the number, or 'q' to exit: ", false, out intervalStr))
@@ -80,7 +80,8 @@ namespace ScammerFlooder {
 
             // Finalize configuration
             toNum = "+1" + toNum;
-            string[] fromNumArr = fromNums.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Select(n => "+1" + n).ToArray();
+            string[] fromNums = fromNumsStr.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Select(n => "+1" + n).ToArray();
+            var twimlUri = new Uri(twimlUriStr);
             double.TryParse(intervalStr, out double interval);
             interval *= 1000;
 
@@ -91,16 +92,18 @@ namespace ScammerFlooder {
             Console.WriteLine($"\tTwilio account SID: {accountSid}");
             Console.WriteLine($"\tTwilio auth token: {authToken}");
             Console.WriteLine($"\tPhone number to flood: {toNum}");
-            Console.WriteLine($"\tPhone numbers to call from: {fromNumArr}");
-            Console.WriteLine($"\tFlood message: {message}");
+            Console.WriteLine("\tPhone numbers to call from:");
+            foreach (string num in fromNums)
+                Console.WriteLine($"\t\t{num}");
+            Console.WriteLine($"\tTwiML URL: {twimlUriStr}");
             Console.WriteLine($"\tInterval (seconds) at which to call: {interval / 1000d}");
             Console.WriteLine();
             Console.Write($"Press ENTER to start flooding.  You may press any key at any time to exit.");
             Console.ReadLine();
 
             // Set up Flooders
-            ScammerFlooder[] flooders = fromNumArr.Select(num => {
-                var flooder = new ScammerFlooder(accountSid, authToken, toNum, num, message, interval);
+            ScammerFlooder[] flooders = fromNums.Select(num => {
+                var flooder = new ScammerFlooder(accountSid, authToken, toNum, num, twimlUri, interval);
                 flooder.StartingFlood += (sender, e) =>
                     Console.WriteLine($"Starting call {e.FloodCount} from {e.FromNumber} to {e.ToNumber}...");
                 return flooder;

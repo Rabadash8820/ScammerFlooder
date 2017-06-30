@@ -24,16 +24,16 @@ namespace ScammerFlooder {
         private Timer _timer;
         private string _toNum;
         private string _fromNum;
-        private string _message;
+        private Uri _twimlUri;
         private long _count = 0;
 
-        public ScammerFlooder(string accountSid, string authToken, string toNumber, string fromNumber, string message, double interval) {
+        public ScammerFlooder(string accountSid, string authToken, string toNumber, string fromNumber, Uri twimlURI, double interval) {
             TwilioClient.Init(accountSid, authToken);
-            initialize(toNumber, fromNumber, message, interval);
+            initialize(toNumber, fromNumber, twimlURI, interval);
         }
-        public ScammerFlooder(string username, string password, string accountSid, string toNumber, string fromNumber, string message, double interval) {
+        public ScammerFlooder(string username, string password, string accountSid, string toNumber, string fromNumber, Uri twimlURI, double interval) {
             TwilioClient.Init(username, password, accountSid);
-            initialize(toNumber, fromNumber, message, interval);
+            initialize(toNumber, fromNumber, twimlURI, interval);
         }
 
         public event EventHandler<FloodEventArgs> StartingFlood;
@@ -41,10 +41,10 @@ namespace ScammerFlooder {
         public void StartFlooding() => _timer.Start();
         public void StopFlooding() => _timer.Stop();
 
-        private void initialize(string toNumber, string fromNumber, string msg, double interval) {
+        private void initialize(string toNumber, string fromNumber, Uri twimlURI, double interval) {
             _toNum = toNumber;
             _fromNum = fromNumber;
-            _message = msg;
+            _twimlUri = twimlURI;
 
             _timer = new Timer(interval);
             _timer.Elapsed += timer_Elapsed;
@@ -57,7 +57,7 @@ namespace ScammerFlooder {
                     to: new PhoneNumber(_toNum),
                     from: new PhoneNumber(_fromNum),
                     record: true,
-                    url: new Uri($"https://handler.twilio.com/twiml/EHe2d53f50a11634e899410b19b4b70219")
+                    url: _twimlUri
                 );
             }
             catch (Exception ex) {
